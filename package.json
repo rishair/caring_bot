@@ -1,0 +1,24 @@
+{
+  "name": "actively-caring-challenge-bot",
+  "version": "0.0.1",
+  "author": "Rishi Ishairzay <windowasher@gmail.com>",
+  "description": "Telegram bot to facilitate the actively caring challenge",
+  "dependencies": {
+    "btrconf": "^0.1.0",
+    "class-transformer": "^0.1.3",
+    "es6-promise": "^4.0.5",
+    "redis": "^2.6.3",
+    "reflect-metadata": "^0.1.8",
+    "telegraf-session-redis": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "0.0.3",
+    "ts-node": "^1.7.2",
+    "typescript": "^2.1.4"
+  },
+  "scripts": {
+    "start": "npm run build:live",
+    "build:watch": "tsc -w",
+    "build:live": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/Main.ts"
+  }
+}
