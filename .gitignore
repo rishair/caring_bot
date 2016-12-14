@@ -1,4 +1,4 @@
 build/*
 node_modules/*
 typings/*
-src/config/*
+src/config/config.js
