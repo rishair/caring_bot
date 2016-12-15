@@ -2,19 +2,15 @@
 
 ## Problem
 After Actively Caring sessions we see students filled with energy to create a better environment for
-them and their peers.
-
-However it's difficult to find a concrete and reliable outlet for this new found energy. Some
-students attempt to organize large projects with their new found momentum while others see it fade.
-We'd like to give every student the ability to easily sustain this drive with the hope of it
-becoming a habit.
+them and their peers. However it's difficult to find a concrete and reliable outlet for this new
+found energy. Some students attempt to organize large projects while others see it fade. We'd like
+to give every student the ability to easily sustain this drive with the hope of it becoming a habit.
 
 ## What's the idea?
-We'd like to give students an easy way to maintain the momentum after a session concludes by getting
-them in the habit of acting selflessly on a daily basis. We can do so by giving concrete suggestions
-on how to [Actively Care](http://ac4p.org/about) every day and provide tools to track their
-progress. It's posed as a "challenge" that includes both social and individual game mechanics to
-keep students engaged.
+We'd like to give students an easy way to maintain the momentum after a session by giving them tools
+to encourage [Actively Caring](http://ac4p.org/about) and hold themselves and others accountable to
+making it a daily habit. It's posed as a "challenge" that includes both social and individual game
+mechanics to keep students engaged.
 
 This project is a [Telegram](https://telegram.org) messaging bot that serves as a product we can
 dogfood and iterate on. It mimics the types of notifications and interactions we imagine students
