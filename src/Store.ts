@@ -200,12 +200,13 @@ export class ProxyStore<K, V> extends Store<K, V> {
 
 export class RedisStore extends Store<string, string> {
   redis: RedisClient
+  prefix: string
 
-  constructor(redis: RedisClient) {
+  constructor(redis: RedisClient, prefix: string = "") {
     super(
       (key: string) => {
         return new Promise((resolve, reject) =>
-          this.redis.get(key, function(err, resp) {
+          this.redis.get(this.prefix + key, function(err, resp) {
             if (err) { reject(err) }
             else { resolve(resp) }
           })
@@ -213,8 +214,7 @@ export class RedisStore extends Store<string, string> {
       },
       (key: string, value: string) => {
         return new Promise((resolve, reject) => {
-          console.log("SETTING " + key + " TO " + value)
-          this.redis.set(key, value, (err, resp) => {
+          this.redis.set(this.prefix + key, value, (err, resp) => {
             if (err) { reject(err) }
             else { resolve(value) }
           })
@@ -222,14 +222,15 @@ export class RedisStore extends Store<string, string> {
       }
     )
     this.redis = redis
+    if (prefix == "" || prefix.charAt(prefix.length - 1) == "/") {
+      this.prefix = prefix
+    } else {
+      this.prefix = prefix + "/"
+    }
   }
 
   scope(namespace: string) {
-    return new ProxyStore<string, string>(
-      this,
-      (key: string) => this.get(namespace + "/" + key),
-      (key: string, value: string) => this.put(namespace + "/" + key, value)
-    )
+    return new RedisStore(this.redis, this.prefix + namespace)
   }
 }
 

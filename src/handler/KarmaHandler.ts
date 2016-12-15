@@ -9,7 +9,7 @@ import { ForwardingHandler, Handler, IHandler } from "./Handler"
 export class KarmaHandler extends ForwardingHandler {
   userStore: Store<number, User>
 
-  static congratulatoryMessages = ["Nice!", "Hell yeah!", "Woohoo!", "Dope!", "Nailed it.", "Aw yeah."]
+  static congratulatoryMessages = ["Nice!", "Woo!", "Dope!", "Nailed it."]
   static consolingMessages = ["Ouch.", "Dang.", "Harsh.", "Oh snap.", "Dramaaaaa."]
 
   random<K>(list: Array<K>) {

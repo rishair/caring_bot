@@ -22,6 +22,7 @@ export class User {
 
   update(user: any) {
     this.name = user.first_name + " " + user.last_name
+    return this
   }
 
   modifyKarma(karmaDiff: number, roomId: number = -1) {

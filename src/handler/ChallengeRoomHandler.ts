@@ -36,9 +36,9 @@ export class ChallengeRoomHandler extends ForwardingHandler {
         this.chatIdsStore.modify((input) => {
           if (!input.some((id) => id == ctx.chat.id)) {
             input.push(ctx.chat.id)
-            ctx.reply("Who dare wake me?")
+            ctx.reply("Actively caring challenge has commenced!")
           } else {
-            ctx.reply("Sup?")
+            ctx.reply("Challenge already under way.")
           }
           return input
         })

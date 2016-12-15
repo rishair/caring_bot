@@ -22,7 +22,7 @@ export class ChallengeHandler extends ForwardingHandler {
     super()
     this.chatId = chatId
     this.telegram = telegram
-    this.userStore = userStore
+    this.userStore = userStore.default((id) => new User(id))
     this.memberIdsStore =
       memberIdsStore
         .default([])
@@ -56,7 +56,16 @@ export class ChallengeHandler extends ForwardingHandler {
           return members;
         })
 
-      addMemberId.then(() => {
+      let addUsers =
+        Promise.all(
+          users.map((user) => {
+            this.userStore.modify(user.id, (dbUser) => {
+              return dbUser.update(user)
+            })
+          })
+        )
+
+      Promise.all([addMemberId, addUsers]).then(() => {
         let newUsers = users.map((user) => user.first_name + " " + user.last_name)
         ctx.reply("Added " + newUsers.join(", "))
       }).catch(console.log)
@@ -86,5 +95,15 @@ export class ChallengeHandler extends ForwardingHandler {
       )
     })
 
-  listMembersHandler = Handler.command('members', (ctx) => ctx.reply(this.memberIds))
+  listMembersHandler = Handler.command('members', (ctx) => {
+    Promise.all(
+      this.memberIds.map((memberId) => this.userStore.get(memberId))
+    ).then((users) => {
+      let userList = users
+        .map((user) => "*" + user.name + "* _(" + user.globalKarma() + " karma)_")
+        .join(", ")
+
+      ctx.replyWithMarkdown(userList)
+    })
+  })
 }
