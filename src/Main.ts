@@ -41,7 +41,6 @@ let karmaHandler = new KarmaHandler(userStore).onChatType('group')
 let combinedHandler = Handler.combine(challengeHandler, karmaHandler)
 
 telegram.on('message', (ctx, next) => {
-  console.log(ctx)
   combinedHandler.accept(ctx)
   next();
 });

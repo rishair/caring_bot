@@ -64,10 +64,11 @@ export class ChallengeHandler extends ForwardingHandler {
 
   notifyHandler =
     Handler.command('notify', (ctx) => {
-      console.log(ctx.chat)
       if (ctx.chat.type == 'private') {
-        console.log("Private notification request")
-        ctx.telegram.sendMessage(this.chatId, "(!!) " + ctx.message.text.slice("/notify ".length))
+        ctx.telegram.sendMessage(
+          this.chatId, "*[!!]* " + ctx.message.text.slice("/notify ".length),
+          { parse_mode: 'Markdown' }
+        )
       }
     })
 
