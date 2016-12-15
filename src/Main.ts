@@ -50,12 +50,12 @@ let challengeCreator: ChallengeHandlerFactory =
   }
 
 let challengeHandler = new ChallengeRoomHandler(telegram, chatIdsStore, challengeCreator)
-let karmaHandler = new KarmaHandler(userStore).onChatType('group')
+let karmaHandler = new KarmaHandler(userStore)
 let taskHandler = new TaskHandler(taskIdsStore, taskStore)
 let pingHandler =
-  Handler.command("ping", (ctx) => {
-    ctx.reply(["pong", "pong"].join("\n"))
-  })
+  Handler
+    .act((ctx) => ctx.reply("pong"))
+    .command("ping")
 
 let combinedHandler =
   Handler.combine(

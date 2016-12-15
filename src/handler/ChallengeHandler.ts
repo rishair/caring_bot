@@ -41,7 +41,7 @@ export class ChallengeHandler extends ForwardingHandler {
   }
 
   addMemberHandler =
-    Handler.command('add', (ctx) => {
+    Handler.act((ctx) => {
       let users = ctx.message.entities
         .map((entity) => entity.user)
         .filter((user) => user != undefined)
@@ -70,9 +70,11 @@ export class ChallengeHandler extends ForwardingHandler {
         ctx.replyWithMarkdown("Added " + newUsers.join(", "))
       }).catch(console.log)
     })
+    .hasUserEntities(true)
+    .command("/user add", "/add")
 
   notifyHandler =
-    Handler.command('notify', (ctx) => {
+    Handler.act((ctx) => {
       if (ctx.chat.type == 'private') {
         ctx.telegram.sendMessage(
           this.chatId, "*[!!]* " + ctx.message.text.slice("/notify ".length),
@@ -80,9 +82,11 @@ export class ChallengeHandler extends ForwardingHandler {
         )
       }
     })
+    .hasUserEntities(true)
+    .command("/notify")
 
   removeMemberHandler =
-    Handler.command('remove', (ctx) => {
+    Handler.act((ctx) => {
       let user = ctx.message.entities
         .map((entity) => entity.user)
         .filter((user) => user != undefined)
@@ -94,16 +98,19 @@ export class ChallengeHandler extends ForwardingHandler {
         ctx.reply("Removed " + user.first_name)
       )
     })
+    .hasUserEntities(true)
+    .command("remove", "user remove")
 
-  listMembersHandler = Handler.command('members', (ctx) => {
-    Promise.all(
-      this.memberIds.map((memberId) => this.userStore.get(memberId))
-    ).then((users) => {
-      let userList = users
-        .map((user) => "*" + user.name + "* _(" + user.globalKarma() + " karma)_")
-        .join("\n")
+  listMembersHandler =
+    Handler.act((ctx) => {
+      Promise.all(
+        this.memberIds.map((memberId) => this.userStore.get(memberId))
+      ).then((users) => {
+        let userList = users
+          .map((user) => "*" + user.name + "* _(" + user.globalKarma() + " karma)_")
+          .join("\n")
 
-      ctx.replyWithMarkdown(userList)
-    })
-  })
+        ctx.replyWithMarkdown(userList)
+      })
+    }).command("members")
 }

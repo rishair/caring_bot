@@ -19,12 +19,32 @@ export class Handler implements IHandler {
     })
   }
 
-  onChatType(type: string) {
-    return this.filter((ctx) => ctx.chat.type == type)
+  hasUserEntities(error: boolean = false) {
+    return this.filter((ctx) => {
+      let hasEntities = ctx.message.entities
+        && ctx.message.entities.some((entity) => !!entity.user)
+      if (!hasEntities) {
+        ctx.replyWithMarkdown("Try again except *@mentioning* a user")
+      }
+      return hasEntities
+    })
   }
 
-  static command(name: string, accept: (ctx: any) => void) {
-    return Handler.act(accept).filter((ctx) => ctx.message.text.indexOf("/" + name) == 0)
+  onChatType(type: string, error: boolean = false) {
+    return this.filter((ctx) => {
+      if (ctx.chat.type == type) {
+        return true
+      } else {
+        if (error) ctx.replyWithMarkdown(`Try again in a *${type}* chat`)
+        return false
+      }
+    })
+  }
+
+  command(...names: string[]) {
+    return this.filter((ctx) => {
+      return names.some((name) => ctx.message.text.indexOf("/" + name) == 0)
+    })
   }
 
   static create(accept: (ctx: any) => boolean) {

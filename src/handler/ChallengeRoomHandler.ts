@@ -30,7 +30,7 @@ export class ChallengeRoomHandler extends ForwardingHandler {
   }
 
   initHandler: Handler =
-    Handler.command('init', (ctx) => {
+    Handler.act((ctx) => {
       this.chatIdsStore.modify((input) => {
         if (!input.some((id) => id == ctx.chat.id)) {
           input.push(ctx.chat.id)
@@ -40,7 +40,10 @@ export class ChallengeRoomHandler extends ForwardingHandler {
         }
         return input
       })
-    }).onChatType('group')
+    })
+    .onChatType('group', true)
+    .command("init")
+
 
   messageHandler: Handler =
     Handler.act((ctx) => {

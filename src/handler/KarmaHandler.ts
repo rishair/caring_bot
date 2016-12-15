@@ -39,32 +39,30 @@ export class KarmaHandler extends ForwardingHandler {
   }
 
   karmaModifierHandler(match: RegExp, delta: number, createMessage: (user) => string) {
-    return Handler.create((ctx) => {
-      if (match.test(ctx.message.text)) {
-        let mentionedUsers =
-          ctx.message.entities
-            .map((entity) => entity.user)
-            .filter((user) => user != undefined && user != ctx.from.id)
+    return Handler.act((ctx) => {
+      let mentionedUsers =
+        ctx.message.entities
+          .map((entity) => entity.user)
+          .filter((user) => user != undefined && user != ctx.from.id)
 
-        mentionedUsers.forEach((mentionedUser) => {
-          if (mentionedUser.id == ctx.from.id) {
-            ctx.replyWithMarkdown("_Really_, " + mentionedUser.first_name + "?", "markdown")
-          } else {
-            this.userStore.modify(mentionedUser.id, (user) => {
-              console.log(user)
-              console.log(mentionedUser)
-              user.update(mentionedUser)
-              user.modifyKarma(delta, ctx.chat.id)
-              return user
-            }).then((user) => {
-              ctx.replyWithMarkdown(createMessage(user))
-            }).catch(console.log)
-          }
-        })
-        return true
-      } else {
-        return false
-      }
+      mentionedUsers.forEach((mentionedUser) => {
+        if (mentionedUser.id == ctx.from.id) {
+          ctx.replyWithMarkdown("_Really_, " + mentionedUser.first_name + "?", "markdown")
+        } else {
+          this.userStore.modify(mentionedUser.id, (user) => {
+            console.log(user)
+            console.log(mentionedUser)
+            user.update(mentionedUser)
+            user.modifyKarma(delta, ctx.chat.id)
+            return user
+          }).then((user) => {
+            ctx.replyWithMarkdown(createMessage(user))
+          }).catch(console.log)
+        }
+      })
     })
+    .hasUserEntities(true)
+    .onChatType('group', true)
+    .filter((ctx) => match.test(ctx.message.text))
   }
 }

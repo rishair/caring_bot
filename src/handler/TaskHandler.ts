@@ -5,28 +5,25 @@ import { InMemoryStore, ItemStore, Serializer, Store } from "../Store"
 import { ChallengeHandler, ChallengeHandlerFactory } from "./ChallengeHandler"
 import { ForwardingHandler, Handler, IHandler } from "./Handler"
 
-export type DraftState = { active: boolean, taskId?: number, description?: string, title?: string }
+export type Draft = { active: boolean, taskId?: number, description?: string, title?: string }
 
 export class TaskHandler extends ForwardingHandler {
   taskIdsStore: ItemStore<number[]>
   taskStore: Store<number, Task>
-  draftStateStore: Store<string, DraftState>
+  drafts: { [key: string] : Draft }
 
-  stopCommands: RegExp = /(stop|cancel|exit)/
+
+  private defaultDraft: Draft = {active: false}
+  private stopCommands: RegExp = /(stop|cancel|exit)/
 
   constructor (
     taskIdsStore: ItemStore<number[]>,
-    taskStore: Store<number, Task>,
-    draftStateStore: Store<string, DraftState> = new InMemoryStore<string, DraftState>()
+    taskStore: Store<number, Task>
   ) {
     super()
     this.taskIdsStore = taskIdsStore
     this.taskStore = taskStore
-    this.draftStateStore =
-      draftStateStore
-        .default((k) => {
-          return { active: false }
-        })
+    this.drafts = { }
 
     this.addHandler(
       Handler.firstOnly(
@@ -35,13 +32,14 @@ export class TaskHandler extends ForwardingHandler {
           this.addTask,
           this.removeTask
         ),
+        this.cancelDraft,
         this.awaitingInput
       )
     )
   }
 
   listTasks =
-    Handler.command("task list", (ctx) => {
+    Handler.act((ctx) => {
       this.taskIdsStore.get().then((taskIds) => {
         return Promise.all(
           taskIds.map((taskId) => {
@@ -61,27 +59,32 @@ export class TaskHandler extends ForwardingHandler {
           ctx.replyWithMarkdown(allTasksString)
         }
       })
-    })
+    }).command("tasks", "task list")
 
   getChatKey(ctx) {
-    console.log(ctx.chat.id.toString() + ":" + ctx.from.id.toString())
     return ctx.chat.id.toString() + ":" + ctx.from.id.toString()
   }
 
+  deleteDraft(ctx) {
+    delete this.drafts[this.getChatKey(ctx)]
+  }
+
+  getDraft(ctx) {
+    return this.drafts[this.getChatKey(ctx)] || this.defaultDraft
+  }
+
   addTask =
-    Handler.command("task add", (ctx) => {
+    Handler.act((ctx) => {
       let chatKey = this.getChatKey(ctx)
       ctx.replyWithMarkdown("What's the description of the task? _(5 - 200 chars)_")
-      this.draftStateStore.put(chatKey, { active: true })
+      this.drafts[chatKey] = { active: true }
     })
+    .command("task add", "add_task", "task_add")
 
-  editTask =
-    Handler.command("task edit", (ctx) => {
-
-    })
+  editTask = Handler.act((ctx) => {}).command("task edit")
 
   removeTask =
-    Handler.command("task remove", (ctx) => {
+    Handler.act((ctx) => {
       let message: string = ctx.message.text.trim()
       let results = message.match(/[0-9]+/m)
       if (results) {
@@ -94,46 +97,44 @@ export class TaskHandler extends ForwardingHandler {
         })
       }
     })
+    .command("task remove", "remove_task", "task_remove")
+
+  cancelDraft =
+    Handler.act((ctx) => {
+      this.deleteDraft(ctx)
+      ctx.reply("Task creation cancelled.")
+    })
+    .filter((ctx) => this.stopCommands.test(ctx.message.text.toLowerCase().trim()))
 
   awaitingInput =
     Handler.act((ctx) => {
-      let chatKey: string = this.getChatKey(ctx)
-      let message: string = ctx.message.text
-
-      if (this.stopCommands.test(message.toLowerCase().trim())) {
-        this.draftStateStore.put(chatKey, undefined)
-        ctx.reply("Task creation cancelled.")
-        return
+      let draft: Draft = this.getDraft(ctx)
+      let message = ctx.message.text.trim()
+      if (!draft.description) {
+        if (message.length > 5 && message.length < 200) {
+          draft.description = message
+          ctx.replyWithMarkdown("Great. What would you like to title this challenge? _(3 - 36 chars)_")
+        } else {
+          ctx.replyWithMarkdown("Please enter a description between _(5 - 200) chars_")
+        }
+      } else if (!draft.title) {
+        if (message.length > 3 && message.length < 36) {
+          draft.title = message
+        } else {
+          ctx.replyWithMarkdown("Please enter a title between _(3 - 36) chars_")
+        }
       }
 
-      this.draftStateStore.modify(chatKey, (state) => {
-        if (state.active) {
-          console.log("state active")
-          if (!state.description) {
-            if (message.length > 5 && message.length < 200) {
-              state.description = message
-              ctx.replyWithMarkdown("Great. What would you like to title this challenge? _(3 - 36 chars)_")
-            } else {
-              ctx.replyWithMarkdown("Please enter a description between _(5 - 200) chars_")
-            }
-          } else if (!state.title) {
-            if (message.length > 3 && message.length < 36) {
-              state.title = message
-            } else {
-              ctx.replyWithMarkdown("Please enter a title between _(3 - 36) chars_")
-            }
-          }
-
-          if (state.title && state.description) {
-            let id = Math.floor(Math.random() * 100000)
-            let task = new Task(id, state.title, state.description)
-            state = undefined
-            this.taskStore.put(id, task).then(() => {
-              ctx.replyWithMarkdown("Your task has been added as ID: " + id)
-            }).catch(console.log)
-          }
-        }
-        return state
-      })
+      if (draft.title && draft.description) {
+        let id = Math.floor(Math.random() * 100000)
+        let task = new Task(id, draft.title, draft.description)
+        this.deleteDraft(ctx)
+        this.taskStore.put(id, task).then(() => {
+          ctx.replyWithMarkdown("Your task has been added as ID: " + id)
+        }).catch(console.log)
+      }
     })
+    .filter((ctx) => this.getDraft(ctx).active)
+
+
 }
