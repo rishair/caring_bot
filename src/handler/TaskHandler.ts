@@ -2,7 +2,7 @@ import * as RedisClient from 'redis';
 import { Task } from "../model/Task"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { InMemoryStore, ItemStore, Serializer, Store } from "../Store"
-import { ChallengeHandler, ChallengeHandlerFactory } from "./ChallengeHandler"
+import { GroupHandler, GroupHandlerFactory } from "./GroupHandler"
 import { ForwardingHandler, Handler, IHandler } from "./Handler"
 
 export type Draft = { active: boolean, taskId?: number, description?: string, title?: string }

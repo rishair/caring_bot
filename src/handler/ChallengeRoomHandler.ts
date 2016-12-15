@@ -2,19 +2,19 @@ import * as RedisClient from 'redis';
 import { User } from "../model/User"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { ItemStore, Serializer, Store } from "../Store"
-import { ChallengeHandler, ChallengeHandlerFactory } from "./ChallengeHandler"
+import { GroupHandler, GroupHandlerFactory } from "./GroupHandler"
 import { ForwardingHandler, Handler, IHandler } from "./Handler"
 
-export class ChallengeRoomHandler extends ForwardingHandler {
+export class GroupCreationHandler extends ForwardingHandler {
   telegram: any
   chatIdsStore: ItemStore<number[]>
-  challenges: { [roomId: number] : ChallengeHandler }
-  challengeFactory: ChallengeHandlerFactory
+  challenges: { [roomId: number] : GroupHandler }
+  challengeFactory: GroupHandlerFactory
 
   constructor (
     telegram: any,
     chatIdsStore: ItemStore<number[]>,
-    challengeFactory: ChallengeHandlerFactory
+    challengeFactory: GroupHandlerFactory
   ) {
     super()
     this.telegram = telegram

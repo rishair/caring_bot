@@ -3,9 +3,9 @@ import { ItemStore, Store } from "../Store"
 import { User } from "../model/User"
 import { ForwardingHandler, IHandler } from "./Handler"
 
-export type ChallengeHandlerFactory = (chatId: number) => ChallengeHandler
+export type GroupHandlerFactory = (chatId: number) => GroupHandler
 
-export class ChallengeHandler extends ForwardingHandler {
+export class GroupHandler extends ForwardingHandler {
   telegram: any
   chatId: number
   memberIds: number[]

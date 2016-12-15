@@ -2,13 +2,13 @@ import * as Btrconf from 'btrconf';
 import AppConfig from './AppConfig';
 import * as RedisClient from 'redis';
 import * as TelegramClient from './Telegram'
-import { ChallengeRoomHandler } from "./handler/ChallengeRoomHandler"
+import { GroupCreationHandler } from "./handler/GroupCreationHandler"
 import { RedisStore } from "./Store"
 import { User } from "./model/User"
 import { Task } from "./model/Task"
 import { InMemoryStore, Serializer } from "./Store"
 import { Handler } from "./handler/Handler"
-import { ChallengeHandler, ChallengeHandlerFactory } from "./handler/ChallengeHandler"
+import { GroupHandler, GroupHandlerFactory } from "./handler/GroupHandler"
 import { KarmaHandler } from "./handler/KarmaHandler"
 import { TaskHandler } from "./handler/TaskHandler"
 import { ItemStore, Store } from "./Store"
@@ -42,14 +42,14 @@ let taskStore: Store<number, Task> =
 
 let challengeScope = redisStore.scope("challenge")
 
-let challengeCreator: ChallengeHandlerFactory =
+let challengeCreator: GroupHandlerFactory =
   function(chatId: number) {
     let challengeStore = challengeScope.scope(chatId.toString())
     let memberIdsStore = challengeStore.item("members").contramap(Serializer.simpleArray<number>())
-    return new ChallengeHandler(chatId, telegram, memberIdsStore, userStore)
+    return new GroupHandler(chatId, telegram, memberIdsStore, userStore)
   }
 
-let challengeHandler = new ChallengeRoomHandler(telegram, chatIdsStore, challengeCreator)
+let GroupHandler = new GroupCreationHandler(telegram, chatIdsStore, challengeCreator)
 let karmaHandler = new KarmaHandler(userStore)
 let taskHandler = new TaskHandler(taskIdsStore, taskStore)
 let pingHandler =
@@ -59,7 +59,7 @@ let pingHandler =
 
 let combinedHandler =
   Handler.combine(
-    challengeHandler,
+    GroupHandler,
     karmaHandler,
     taskHandler,
     pingHandler
