@@ -17,7 +17,7 @@ dogfood and iterate on. It mimics the types of notifications and interactions we
 would be engaged with and allows participants to experiment with rules along the way.
 
 ## What does it do?
-There are many moving parts and experiments that will happen over the coming weeks but at it's core
+There are many moving parts and experiments that will happen over the coming weeks but at its core
 the bot is repsonsible for:
 
 - Organizing and managing teams
