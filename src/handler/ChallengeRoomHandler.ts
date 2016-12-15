@@ -1,9 +1,8 @@
 import * as RedisClient from 'redis';
-import { User } from "../User"
+import { User } from "../model/User"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { ItemStore, Serializer, Store } from "../Store"
 import { ChallengeHandler, ChallengeHandlerFactory } from "./ChallengeHandler"
-import { Promise } from 'es6-promise'
 import { ForwardingHandler, Handler, IHandler } from "./Handler"
 
 export class ChallengeRoomHandler extends ForwardingHandler {
@@ -32,21 +31,19 @@ export class ChallengeRoomHandler extends ForwardingHandler {
 
   initHandler: Handler =
     Handler.command('init', (ctx) => {
-      if (ctx.chat.type == 'group') {
-        this.chatIdsStore.modify((input) => {
-          if (!input.some((id) => id == ctx.chat.id)) {
-            input.push(ctx.chat.id)
-            ctx.reply("Actively caring challenge has commenced!")
-          } else {
-            ctx.reply("Challenge already under way.")
-          }
-          return input
-        })
-      }
-    })
+      this.chatIdsStore.modify((input) => {
+        if (!input.some((id) => id == ctx.chat.id)) {
+          input.push(ctx.chat.id)
+          ctx.reply("Actively caring challenge has commenced!")
+        } else {
+          ctx.reply("Challenge already under way.")
+        }
+        return input
+      })
+    }).onChatType('group')
 
   messageHandler: Handler =
-    new Handler((ctx) => {
+    Handler.act((ctx) => {
       for (var key in this.challenges) {
         let challenge = this.challenges[key]
         if (challenge.chatId == ctx.chat.id || challenge.isMember(ctx.from.id)) {

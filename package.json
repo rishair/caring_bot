@@ -4,10 +4,8 @@
   "author": "Rishi Ishairzay <windowasher@gmail.com>",
   "description": "Telegram bot to facilitate the actively caring challenge",
   "dependencies": {
-    "@types/es6-promise": "0.0.32",
     "btrconf": "^0.1.0",
     "class-transformer": "^0.1.3",
-    "es6-promise": "^4.0.5",
     "redis": "^2.6.3",
     "reflect-metadata": "^0.1.8",
     "telegraf-session-redis": "^4.2.0"

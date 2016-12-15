@@ -1,4 +1,4 @@
-import { Serializer } from "./Store"
+import { Serializer } from "../Store"
 import { Exclude, deserialize, serialize } from "class-transformer";
 
 export class User {

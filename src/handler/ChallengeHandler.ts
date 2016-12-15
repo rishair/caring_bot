@@ -1,7 +1,6 @@
-import { Promise } from 'es6-promise'
 import { Handler } from "./Handler"
 import { ItemStore, Store } from "../Store"
-import { User } from "../User"
+import { User } from "../model/User"
 import { ForwardingHandler, IHandler } from "./Handler"
 
 export type ChallengeHandlerFactory = (chatId: number) => ChallengeHandler

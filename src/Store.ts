@@ -1,4 +1,3 @@
-import { Promise } from 'es6-promise'
 import { RedisClient } from 'redis';
 import { deserialize, serialize } from "class-transformer";
 
@@ -135,6 +134,25 @@ export abstract class Store<K, V> {
     )
   }
 
+  trackKeys(rawKeyStore: ItemStore<K[]>) {
+    let keyStore = rawKeyStore.default([])
+    return new ProxyStore<K, V>(
+      this,
+      this.get,
+      (key: K, value: V) => {
+        if (value == undefined || value == null) {
+          return keyStore
+            .modify((input) => input.filter((id) => id != key))
+            .then(() => this.put(key, value))
+        } else {
+          return keyStore
+            .modify((input) => input.filter((id) => id != key).concat(key))
+            .then(() => this.put(key, value))
+        }
+      }
+    )
+  }
+
   contramapValue<V2>(valueSerializer: Serializer<V2, V>) {
     return new SerializingStore<K, K, V2, V>(this, (input) => input, valueSerializer)
   }
@@ -198,6 +216,32 @@ export class ProxyStore<K, V> extends Store<K, V> {
 
 }
 
+export class InMemoryStore<K, V> extends Store<K, V> {
+  data: { [key: string]: V }
+  prefix: string
+
+  constructor(
+    data: { [key: string]: V } = {},
+    prefix: string = ""
+  ) {
+    super(
+      (key) => {
+        return Promise.resolve(this.data[key.toString()])
+      },
+      (key, value) => {
+        this.data[key.toString()] = value
+        return Promise.resolve(value)
+      }
+    )
+    this.data = data
+    this.prefix = prefix
+  }
+
+  scope(namespace: string) {
+    return new InMemoryStore<K, V>(this.data, this.prefix + "/" + namespace)
+  }
+}
+
 export class RedisStore extends Store<string, string> {
   redis: RedisClient
   prefix: string
@@ -233,4 +277,6 @@ export class RedisStore extends Store<string, string> {
     return new RedisStore(this.redis, this.prefix + namespace)
   }
 }
+
+
 
