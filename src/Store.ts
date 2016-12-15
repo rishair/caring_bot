@@ -77,6 +77,10 @@ export class Serializer<A, B> {
   static identity<T>() {
     return new Serializer<T, T>((v) => v, (v) => v);
   }
+
+  static simpleArray<T>() {
+    return new Serializer<T[], string>(JSON.stringify, JSON.parse)
+  }
 }
 
 type Get<K, V> = (key: K) => Promise<V>
@@ -93,11 +97,89 @@ export abstract class Store<K, V> {
 
   abstract scope(namespace: string): Store<K, V>
 
+  modify(key: K, transform: (input: V) => V) {
+    return this.get(key).then((value) => {
+      let originalStringifiedValue = JSON.stringify(value)
+      let transformedValue = transform(value)
+      let transformedStringifiedValue = JSON.stringify(transformedValue)
+
+      console.log(originalStringifiedValue + " ?= " + transformedStringifiedValue)
+
+      if (originalStringifiedValue != transformedStringifiedValue) {
+        return this.put(key, transformedValue)
+      } else {
+        return Promise.resolve(value)
+      }
+    })
+  }
+
+  default(getValue: (k: K) => V) {
+    return new ProxyStore<K, V>(
+      this,
+      (key: K) => this.get(key).then(function(resp) {
+        if (resp == null) {
+          return Promise.resolve(getValue(key))
+        } else {
+          return Promise.resolve(resp)
+        }
+      }),
+      this.put
+    )
+  }
+
   item(key: K): ItemStore<V> {
     let me = this
     return new ItemStore<V>(
       () => { return me.get(key) },
       (value: V) => { return me.put(key, value) }
+    )
+  }
+
+  contramapValue<V2>(valueSerializer: Serializer<V2, V>) {
+    return new SerializingStore<K, K, V2, V>(this, (input) => input, valueSerializer)
+  }
+
+  transformKey<K2>(keyTransformer: Transformer<K2, K>) {
+    return new SerializingStore<K2, K, V, V>(this, keyTransformer, Serializer.identity<V>())
+  }
+
+  contramap<K2, V2>(keyTransformer: Transformer<K2, K>, valueSerializer: Serializer<V2, V>) {
+    return new SerializingStore<K2, K, V2, V>(this, keyTransformer, valueSerializer)
+  }
+}
+
+type Transformer<A, B> = (input: A) => B
+
+export class SerializingStore<K, K2, V, V2> extends Store<K, V> {
+  underlying: Store<K2, V2>
+  keyTransformer: Transformer<K, K2>
+  valueSerializer: Serializer<V, V2>
+
+  constructor(
+    underlying: Store<K2, V2>,
+    keyTransformer: Transformer<K, K2>,
+    valueSerializer: Serializer<V, V2>
+  ) {
+    super(
+      (key: K) => {
+        return underlying.get(keyTransformer(key))
+          .then((value) => Promise.resolve(valueSerializer.from(value)))
+      },
+      (key: K, value: V) => {
+        return underlying.put(keyTransformer(key), valueSerializer.to(value))
+          .then(() => value)
+      }
+    )
+    this.underlying = underlying
+    this.keyTransformer = keyTransformer
+    this.valueSerializer = valueSerializer
+  }
+
+  scope(namespace: string): Store<K, V> {
+    return new SerializingStore(
+      this.underlying.scope(namespace),
+      this.keyTransformer,
+      this.valueSerializer
     )
   }
 }
