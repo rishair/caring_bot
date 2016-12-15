@@ -25,14 +25,14 @@ export class KarmaHandler extends ForwardingHandler {
         /\+\+$/,
         1,
         (user) => {
-          return "_" + this.random(KarmaHandler.congratulatoryMessages) + "_ " + user.name + " has " + user.globalKarma() + " karma!"
+          return `_${this.random(KarmaHandler.congratulatoryMessages)}_ *${user.name}* has ${user.globalKarma()} karma!`
         }
       ),
       this.karmaModifierHandler(
         /(--|—)$/,
         -1,
         (user) => {
-          return "_" + this.random(KarmaHandler.consolingMessages) + "_ " + user.name + " has *" + user.globalKarma() + "* karma."
+          return `_${this.random(KarmaHandler.consolingMessages)}_ *${user.name}* has ${user.globalKarma()} karma.`
         }
       )
     )
@@ -43,15 +43,13 @@ export class KarmaHandler extends ForwardingHandler {
       let mentionedUsers =
         ctx.message.entities
           .map((entity) => entity.user)
-          .filter((user) => user != undefined && user != ctx.from.id)
+          .filter((user) => user != undefined)
 
       mentionedUsers.forEach((mentionedUser) => {
         if (mentionedUser.id == ctx.from.id) {
           ctx.replyWithMarkdown("_Really_, " + mentionedUser.first_name + "?", "markdown")
         } else {
           this.userStore.modify(mentionedUser.id, (user) => {
-            console.log(user)
-            console.log(mentionedUser)
             user.update(mentionedUser)
             user.modifyKarma(delta, ctx.chat.id)
             return user
