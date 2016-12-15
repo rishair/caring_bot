@@ -9,13 +9,12 @@ students attempt to organize large projects with their new found momentum while 
 We'd like to give every student the ability to easily sustain this drive with the hope of it
 becoming a habit.
 
-## Whats the idea?
-We'd like to give students an easy way to maintain the momentum after a session concludes. The idea
-is to get students in the habit of acting selflessly on a daily basis by giving concrete
-suggestions of "actively caring".
-
-It's posed as a "challenge" that includes both social and individual game mechanics to keep students
-engaged.
+## What's the idea?
+We'd like to give students an easy way to maintain the momentum after a session concludes by getting
+them in the habit of acting selflessly on a daily basis. We can do so by giving concrete suggestions
+on how to [Actively Care](http://ac4p.org/about) every day and provide tools to track their
+progress. It's posed as a "challenge" that includes both social and individual game mechanics to
+keep students engaged.
 
 This project is a [Telegram](https://telegram.org) messaging bot that serves as a product we can
 dogfood and iterate on. It mimics the types of notifications and interactions we imagine students
@@ -33,3 +32,17 @@ the bot is repsonsible for:
   streaks, encouragement, etc.)
 
 For more information on the organization making this happen visit [AC4P](http://www.ac4p.org/)
+
+# Development
+## Setup
+The project uses TypeScript/Node.js and requires a couple of dependencies to get started:
+
+```
+npm install -g ts-node typescript
+```
+
+## Running
+```
+npm run build:live
+```
+
