@@ -1,0 +1,3 @@
+- Manage a list of caring acts
+- Message every morning with X acts
+- Allow users to record completed tasks via private message
