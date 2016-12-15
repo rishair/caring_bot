@@ -65,8 +65,9 @@ export class ChallengeHandler extends ForwardingHandler {
         )
 
       Promise.all([addMemberId, addUsers]).then(() => {
-        let newUsers = users.map((user) => user.first_name + " " + user.last_name)
-        ctx.reply("Added " + newUsers.join(", "))
+        let newUsers = users
+          .map((user) => "*" + user.first_name + " " + user.last_name + "*")
+        ctx.replyWithMarkdown("Added " + newUsers.join(", "))
       }).catch(console.log)
     })
 
@@ -100,7 +101,7 @@ export class ChallengeHandler extends ForwardingHandler {
     ).then((users) => {
       let userList = users
         .map((user) => "*" + user.name + "* _(" + user.globalKarma() + " karma)_")
-        .join(", ")
+        .join("\n")
 
       ctx.replyWithMarkdown(userList)
     })
