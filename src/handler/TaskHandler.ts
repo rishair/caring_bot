@@ -12,7 +12,6 @@ export class TaskHandler extends ForwardingHandler {
   taskStore: Store<number, Task>
   drafts: { [key: string] : Draft }
 
-
   private defaultDraft: Draft = {active: false}
   private stopCommands: RegExp = /(stop|cancel|exit)/
 
@@ -38,6 +37,18 @@ export class TaskHandler extends ForwardingHandler {
     )
   }
 
+  getChatKey(ctx) {
+    return ctx.chat.id.toString() + ":" + ctx.from.id.toString()
+  }
+
+  deleteDraft(ctx) {
+    delete this.drafts[this.getChatKey(ctx)]
+  }
+
+  getDraft(ctx) {
+    return this.drafts[this.getChatKey(ctx)] || this.defaultDraft
+  }
+
   listTasks =
     Handler.act((ctx) => {
       this.taskIdsStore.get().then((taskIds) => {
@@ -60,18 +71,6 @@ export class TaskHandler extends ForwardingHandler {
         }
       })
     }).command("tasks", "task list")
-
-  getChatKey(ctx) {
-    return ctx.chat.id.toString() + ":" + ctx.from.id.toString()
-  }
-
-  deleteDraft(ctx) {
-    delete this.drafts[this.getChatKey(ctx)]
-  }
-
-  getDraft(ctx) {
-    return this.drafts[this.getChatKey(ctx)] || this.defaultDraft
-  }
 
   addTask =
     Handler.act((ctx) => {
@@ -135,6 +134,4 @@ export class TaskHandler extends ForwardingHandler {
       }
     })
     .filter((ctx) => this.getDraft(ctx).active)
-
-
 }
