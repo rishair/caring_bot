@@ -39,7 +39,7 @@ export class KarmaHandler extends ForwardingHandler {
   }
 
   karmaModifierHandler(match: RegExp, delta: number, createMessage: (user) => string) {
-    return new Handler((ctx) => {
+    return Handler.create((ctx) => {
       if (match.test(ctx.message.text)) {
         let mentionedUsers =
           ctx.message.entities
@@ -61,6 +61,9 @@ export class KarmaHandler extends ForwardingHandler {
             }).catch(console.log)
           }
         })
+        return true
+      } else {
+        return false
       }
     })
   }
