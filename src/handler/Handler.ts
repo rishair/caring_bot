@@ -11,15 +11,22 @@ export abstract class Handler {
       .reduce((a, b) => a.concat(b), [])
   }
 
-  filter(predicate: (ctx: any) => boolean) {
+  filter(predicate: (ctx: any) => boolean, requirement?: string): Handler {
     let me = this
-    return new ConcreteHandler((ctx: any) => {
-      if (predicate(ctx)) {
-        return me.accept(ctx)
-      } else {
-        return false
-      }
-    }, this)
+    let handler =
+      new ConcreteHandler((ctx: any) => {
+        if (predicate(ctx)) {
+          return me.accept(ctx)
+        } else {
+          return false
+        }
+      }, this)
+
+    if (requirement) {
+      return handler.requirement(requirement)
+    } else {
+      return handler
+    }
   }
 
   hasUserEntities(error: boolean = false) {
@@ -31,6 +38,7 @@ export abstract class Handler {
       }
       return hasEntities
     })
+    .requirement("@mention a user")
   }
 
   onChatType(type: string, error: boolean = false) {
@@ -42,6 +50,7 @@ export abstract class Handler {
         return false
       }
     })
+    .requirement(`${type} chats only`)
   }
 
   withDetail(modifier: (detail: HandlerDetails) => void) {
@@ -99,6 +108,19 @@ export abstract class Handler {
     let handler = new SequentialHandler(true)
     handler.addHandlers(...handlers)
     return handler
+  }
+
+  static stripCommand(str: string) {
+    if (str.indexOf("/") == 0) {
+      let space = str.indexOf(" ")
+      if (space > 0) {
+        return str.slice(space + 1).trim()
+      } else {
+        return ""
+      }
+    } else {
+      return str
+    }
   }
 }
 
@@ -198,9 +220,25 @@ export class HelpHandler extends ForwardingHandler {
     return grouped
   }
 
+  matchDetail(search: string, details: HandlerDetails) {
+    let query = search.toLowerCase()
+    return (details.description && details.description.toLowerCase().indexOf(query) >= 0) ||
+      (details.name && details.name.toLowerCase().indexOf(query) >= 0)
+  }
+
   helpHandler =
     Handler.act((ctx) => {
-      let grouped = this.groupBy(this.details(), (detail) => detail.group || "Other")
+      let message = Handler.stripCommand(ctx.message.text).trim().split(" ")
+
+      let details = this.details()
+      if (message.length > 0 && message[0].trim() != "") {
+        details = details.filter((detail) => this.matchDetail(message[0], detail))
+      }
+
+      console.log(message)
+      console.log(details)
+
+      let grouped = this.groupBy(details, (detail) => detail.group || "Other")
       let help = []
       for (const group in grouped) {
         let details = grouped[group]
