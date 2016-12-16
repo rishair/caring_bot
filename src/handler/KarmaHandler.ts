@@ -3,7 +3,7 @@ import { User } from "../model/User"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { ItemStore, Serializer, Store } from "../Store"
 import { GroupHandler, GroupHandlerFactory } from "./GroupHandler"
-import { ForwardingHandler, Handler, IHandler } from "./Handler"
+import { ForwardingHandler, Handler } from "./Handler"
 
 export class KarmaHandler extends ForwardingHandler {
   userStore: Store<number, User>
@@ -27,14 +27,14 @@ export class KarmaHandler extends ForwardingHandler {
         (user) => {
           return `_${this.random(KarmaHandler.congratulatoryMessages)}_ *${user.name}* has ${user.globalKarma()} karma!`
         }
-      ),
+      ).name("@user++"),
       this.karmaModifierHandler(
         /(--|—)$/,
         -1,
         (user) => {
           return `_${this.random(KarmaHandler.consolingMessages)}_ *${user.name}* has ${user.globalKarma()} karma.`
         }
-      )
+      ).name("@user--")
     )
   }
 
@@ -61,6 +61,7 @@ export class KarmaHandler extends ForwardingHandler {
     })
     .hasUserEntities(true)
     .onChatType('group', true)
+    .description("Add " + delta + " to a user's karma")
     .filter((ctx) => match.test(ctx.message.text))
   }
 }

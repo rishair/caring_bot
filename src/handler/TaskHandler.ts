@@ -3,7 +3,7 @@ import { Task } from "../model/Task"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { InMemoryStore, ItemStore, Serializer, Store } from "../Store"
 import { GroupHandler, GroupHandlerFactory } from "./GroupHandler"
-import { ForwardingHandler, Handler, IHandler } from "./Handler"
+import { ForwardingHandler, Handler } from "./Handler"
 
 export type Draft = { active: boolean, taskId?: number, description?: string, title?: string }
 
@@ -59,7 +59,7 @@ export class TaskHandler extends ForwardingHandler {
         )
       }).then((allTasks) => {
         if (allTasks.length == 0) {
-          ctx.replyWithMarkdown("There are no tasks. Add one now with */task add*")
+          ctx.replyWithMarkdown("There are no tasks. Add one now with */addtask*")
         } else {
           allTasks.sort((a, b) => a.id - b.id)
           let allTasksString =
@@ -70,7 +70,9 @@ export class TaskHandler extends ForwardingHandler {
           ctx.replyWithMarkdown(allTasksString)
         }
       })
-    }).command("tasks", "task list")
+    })
+    .description("List all the tasks")
+    .command("tasks")
 
   addTask =
     Handler.act((ctx) => {
@@ -78,9 +80,10 @@ export class TaskHandler extends ForwardingHandler {
       ctx.replyWithMarkdown("What's the description of the task? _(5 - 200 chars)_")
       this.drafts[chatKey] = { active: true }
     })
-    .command("task add", "add_task", "task_add")
+    .description("Add a task with a title and description")
+    .command("addtask")
 
-  editTask = Handler.act((ctx) => {}).command("task edit")
+  editTask = Handler.act((ctx) => {}).command("edittask")
 
   removeTask =
     Handler.act((ctx) => {
@@ -96,7 +99,8 @@ export class TaskHandler extends ForwardingHandler {
         })
       }
     })
-    .command("task remove", "remove_task", "task_remove")
+    .description("Remove a task by task ID")
+    .command("removetask")
 
   cancelDraft =
     Handler.act((ctx) => {

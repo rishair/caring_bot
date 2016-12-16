@@ -34,7 +34,8 @@ For more information on the organization making this happen visit [AC4P](http://
 The project uses TypeScript/Node.js and requires a couple of dependencies to get started:
 
 ```
-npm install -g ts-node typescript
+npm install -g ts-node typescript nodemon
+npm install
 ```
 
 ## Running

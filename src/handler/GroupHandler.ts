@@ -1,7 +1,6 @@
-import { Handler } from "./Handler"
 import { ItemStore, Store } from "../Store"
 import { User } from "../model/User"
-import { ForwardingHandler, IHandler } from "./Handler"
+import { ForwardingHandler, Handler } from "./Handler"
 
 export type GroupHandlerFactory = (chatId: number) => GroupHandler
 
@@ -71,7 +70,8 @@ export class GroupHandler extends ForwardingHandler {
       }).catch(console.log)
     })
     .hasUserEntities(true)
-    .command("/user add", "/add")
+    .description("Add a user to the active group")
+    .command("/adduser")
 
   notifyHandler =
     Handler.act((ctx) => {
@@ -83,6 +83,7 @@ export class GroupHandler extends ForwardingHandler {
       }
     })
     .hasUserEntities(true)
+    .description("Send an anonymous message to your group")
     .command("/notify")
 
   removeMemberHandler =
@@ -99,7 +100,8 @@ export class GroupHandler extends ForwardingHandler {
       )
     })
     .hasUserEntities(true)
-    .command("remove", "user remove")
+    .description("Remove a user from the active group")
+    .command("removeuser")
 
   listMembersHandler =
     Handler.act((ctx) => {
@@ -112,5 +114,7 @@ export class GroupHandler extends ForwardingHandler {
 
         ctx.replyWithMarkdown(userList)
       })
-    }).command("members")
+    })
+    .description("List all members in the active group")
+    .command("members")
 }

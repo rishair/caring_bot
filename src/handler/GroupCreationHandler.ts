@@ -3,7 +3,7 @@ import { User } from "../model/User"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { ItemStore, Serializer, Store } from "../Store"
 import { GroupHandler, GroupHandlerFactory } from "./GroupHandler"
-import { ForwardingHandler, Handler, IHandler } from "./Handler"
+import { ForwardingHandler, Handler } from "./Handler"
 
 export class GroupCreationHandler extends ForwardingHandler {
   telegram: any
@@ -42,6 +42,7 @@ export class GroupCreationHandler extends ForwardingHandler {
       })
     })
     .onChatType('group', true)
+    .description("Begin a group in the active room")
     .command("init")
 
 

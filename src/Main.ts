@@ -13,6 +13,11 @@ import { KarmaHandler } from "./handler/KarmaHandler"
 import { TaskHandler } from "./handler/TaskHandler"
 import { ItemStore, Store } from "./Store"
 
+// console.log("Start")
+// let dummy = Handler.act((ctx) => 3).command("dummy").group("dummygroup")
+// console.log(dummy.details())
+// console.log("Done")
+
 let config = Btrconf.load<AppConfig>('./config/config')
 let redis = RedisClient.createClient(config.redis);
 let telegram = TelegramClient.default(config.telegram.token);
@@ -49,7 +54,7 @@ let challengeCreator: GroupHandlerFactory =
     return new GroupHandler(chatId, telegram, memberIdsStore, userStore)
   }
 
-let GroupHandler = new GroupCreationHandler(telegram, chatIdsStore, challengeCreator)
+let groupHandler = new GroupCreationHandler(telegram, chatIdsStore, challengeCreator)
 let karmaHandler = new KarmaHandler(userStore)
 let taskHandler = new TaskHandler(taskIdsStore, taskStore)
 let pingHandler =
@@ -57,15 +62,16 @@ let pingHandler =
     .act((ctx) => ctx.reply("pong"))
     .command("ping")
 
+
 let combinedHandler =
   Handler.combine(
-    GroupHandler,
-    karmaHandler,
-    taskHandler,
+    groupHandler.group("Groups"),
+    karmaHandler.group("Karma"),
+    taskHandler.group("Tasks"),
     pingHandler
-  ).filter((ctx) => {
-    return !!ctx.message.text
-  })
+  )
+  .help()
+  .filter((ctx) => !!ctx.message.text )
 
 telegram.on('message', (ctx, next) => {
   combinedHandler.accept(ctx)
@@ -73,5 +79,3 @@ telegram.on('message', (ctx, next) => {
 });
 
 telegram.startPolling();
-
-
