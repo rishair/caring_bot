@@ -112,6 +112,22 @@ export abstract class Store<K, V> {
     })
   }
 
+  onUpdate(update: (key: K, value: V) => void) {
+    return new ProxyStore<K, V>(
+      this,
+      (key) => {
+        let result = this.get(key)
+        result.then((value) => update(key, value))
+        return result
+      },
+      (key: K, value: V) => {
+        let result = this.put(key, value)
+        result.then((value) => update(key, value))
+        return result
+      }
+    )
+  }
+
   default(getValue: (k: K) => V) {
     return new ProxyStore<K, V>(
       this,

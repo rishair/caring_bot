@@ -2,13 +2,12 @@ import * as Btrconf from 'btrconf';
 import AppConfig from './AppConfig';
 import * as RedisClient from 'redis';
 import * as TelegramClient from './Telegram'
-import { GroupCreationHandler } from "./handler/GroupCreationHandler"
 import { RedisStore } from "./Store"
 import { User } from "./model/User"
 import { Task } from "./model/Task"
 import { InMemoryStore, Serializer } from "./Store"
 import { Handler } from "./handler/Handler"
-import { GroupHandler, GroupHandlerFactory } from "./handler/GroupHandler"
+import { GroupHandler } from "./handler/GroupHandler"
 import { KarmaHandler } from "./handler/KarmaHandler"
 import { TaskHandler } from "./handler/TaskHandler"
 import { ItemStore, Store } from "./Store"
@@ -28,11 +27,6 @@ let userStore: Store<number, User> =
     .scope("user")
     .contramap<number, User>((id) => id.toString(), User.serializer)
 
-let chatIdsStore: ItemStore<number[]> =
-  redisStore
-    .item("chat_ids")
-    .contramap(Serializer.simpleArray<number>())
-
 let taskScope = redisStore.scope("task")
 
 let taskIdsStore: ItemStore<number[]> =
@@ -45,23 +39,25 @@ let taskStore: Store<number, Task> =
     .contramap<number, Task>((n) => n.toString(), Task.serializer)
     .trackKeys(taskIdsStore)
 
-let challengeScope = redisStore.scope("challenge")
+let groupScope = redisStore.scope("group")
 
-let challengeCreator: GroupHandlerFactory =
-  function(chatId: number) {
-    let challengeStore = challengeScope.scope(chatId.toString())
-    let memberIdsStore = challengeStore.item("members").contramap(Serializer.simpleArray<number>())
-    return new GroupHandler(chatId, telegram, memberIdsStore, userStore)
-  }
+let groupIdsStore: ItemStore<number[]> =
+  groupScope
+    .item("__ids")
+    .contramap(Serializer.simpleArray<number>())
 
-let groupHandler = new GroupCreationHandler(telegram, chatIdsStore, challengeCreator)
+let groupMembersStore: Store<number, number[]> = groupScope
+    .transformKey<number>((k) => k.toString() + "/members")
+    .trackKeys(groupIdsStore)
+    .contramapValue(Serializer.simpleArray<number>())
+
+let groupHandler = new GroupHandler(telegram, groupIdsStore, groupMembersStore, userStore)
 let karmaHandler = new KarmaHandler(userStore)
 let taskHandler = new TaskHandler(taskIdsStore, taskStore)
 let pingHandler =
   Handler
     .act((ctx) => ctx.reply("pong"))
     .command("ping")
-
 
 let combinedHandler =
   Handler.combine(

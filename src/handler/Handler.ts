@@ -11,45 +11,33 @@ export abstract class Handler {
       .reduce((a, b) => a.concat(b), [])
   }
 
-  filter(predicate: (ctx: any) => boolean, requirement?: string): Handler {
+  filter(predicate: (ctx: any) => boolean, error?: string): Handler {
     let me = this
-    let handler =
-      new ConcreteHandler((ctx: any) => {
-        if (predicate(ctx)) {
-          return me.accept(ctx)
-        } else {
-          return false
+    return new ConcreteHandler((ctx: any) => {
+      if (predicate(ctx)) {
+        return me.accept(ctx)
+      } else {
+        if (error) {
+          ctx.replyWithMarkdown(error)
         }
-      }, this)
-
-    if (requirement) {
-      return handler.requirement(requirement)
-    } else {
-      return handler
-    }
+        return false
+      }
+    }, this)
   }
 
   hasUserEntities(error: boolean = false) {
-    return this.filter((ctx) => {
-      let hasEntities = ctx.message.entities
-        && ctx.message.entities.some((entity) => !!entity.user)
-      if (!hasEntities) {
-        ctx.replyWithMarkdown("Try again except *@mentioning* a user")
-      }
-      return hasEntities
-    })
+    return this.filter(
+      (ctx) => ctx.message.entities && ctx.message.entities.some((entity) => !!entity.user),
+      "Try again except *@mentioning* a user"
+    )
     .requirement("@mention a user")
   }
 
   onChatType(type: string, error: boolean = false) {
-    return this.filter((ctx) => {
-      if (ctx.chat.type == type) {
-        return true
-      } else {
-        if (error) ctx.replyWithMarkdown(`Try again in a *${type}* chat`)
-        return false
-      }
-    })
+    return this.filter(
+      (ctx) => ctx.chat.type == type,
+      `Try again in a *${type}* chat`
+    )
     .requirement(`${type} chats only`)
   }
 
