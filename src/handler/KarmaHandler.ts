@@ -2,7 +2,6 @@ import * as RedisClient from 'redis';
 import { User } from "../model/User"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { ItemStore, Serializer, Store } from "../Store"
-import { GroupHandler, GroupHandlerFactory } from "./GroupHandler"
 import { ForwardingHandler, Handler } from "./Handler"
 
 export class KarmaHandler extends ForwardingHandler {

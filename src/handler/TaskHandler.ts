@@ -1,8 +1,7 @@
 import * as RedisClient from 'redis';
-import { Task } from "../model/Task"
+import { Task, User } from "../model"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { InMemoryStore, ItemStore, Serializer, Store } from "../Store"
-import { GroupHandler, GroupHandlerFactory } from "./GroupHandler"
 import { ForwardingHandler, Handler } from "./Handler"
 
 export type Draft = { active: boolean, taskId?: number, description?: string, title?: string }
@@ -10,14 +9,16 @@ export type Draft = { active: boolean, taskId?: number, description?: string, ti
 export class TaskHandler extends ForwardingHandler {
   taskIdsStore: ItemStore<number[]>
   taskStore: Store<number, Task>
-  drafts: { [key: string] : Draft }
+  userStore: Store<number, User>
+  drafts: { [userId: number] : Draft }
 
-  private defaultDraft: Draft = {active: false}
-  private stopCommands: RegExp = /(stop|cancel|exit)/
+  stopCommands: RegExp = /(stop|cancel|exit)/
+  defaultDraft = { active: false }
 
   constructor (
     taskIdsStore: ItemStore<number[]>,
-    taskStore: Store<number, Task>
+    taskStore: Store<number, Task>,
+    userStore: Store<number, User>
   ) {
     super()
     this.taskIdsStore = taskIdsStore

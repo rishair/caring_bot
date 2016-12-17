@@ -2,7 +2,7 @@ import { ItemStore, Store } from "../Store"
 import { User } from "../model/User"
 import { ForwardingHandler, Handler } from "./Handler"
 
-export class GroupHandler extends ForwardingHandler {
+export class ChallengeHandler extends ForwardingHandler {
   telegram: any
   chatIdsStore: ItemStore<number[]>
   memberIdsStore: Store<number, number[]>

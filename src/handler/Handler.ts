@@ -1,4 +1,5 @@
-type HandlerDetails = { name?: string, description?: string, requirements?: string[], group?: string }
+type Requirement = { name?: string, message: string }
+type HandlerDetails = { name?: string, description?: string, requirements?: Requirement[], group?: string }
 
 export abstract class Handler {
   abstract accept(ctx: any): boolean
@@ -38,7 +39,7 @@ export abstract class Handler {
       (ctx) => ctx.chat.type == type,
       `Try again in a *${type}* chat`
     )
-    .requirement(`${type} chats only`)
+    .requirement(`${type} chats only`, `chat_type:${type}`)
   }
 
   withDetail(modifier: (detail: HandlerDetails) => void) {
@@ -53,10 +54,10 @@ export abstract class Handler {
     return this.withDetail((detail) => detail.description = desc)
   }
 
-  requirement(req: string) {
+  requirement(req: string, name?: string) {
     return this.withDetail((detail) => {
       if (!detail.requirements) { detail.requirements = [] }
-      detail.requirements.push(req)
+      detail.requirements.push({ message: req, name: name })
       return detail
     })
   }
@@ -231,16 +232,26 @@ export class HelpHandler extends ForwardingHandler {
       for (const group in grouped) {
         let details = grouped[group]
         let modules = details.map(detail => {
-          let desc = []
+          let banner = ""
+          let name = ""
+          let description = detail.description
+
           if (detail.name) {
             if (detail.name.indexOf("/") == 0) {
-              desc.push(`${detail.name}`)
+              name = `${detail.name}`
             } else {
-              desc.push(`_${detail.name}_`)
+              name = `_${detail.name}_`
             }
           }
-          if (detail.description) desc.push(`${detail.description}`)
-          return desc.join(" - ")
+          if (detail.requirements) {
+            let reqs = detail.requirements
+            if (reqs.some(r => r.name == "chat_type:private")) {
+              banner = "private only"
+            }
+          }
+          if (banner) { description = `*[${banner}]* ${description}` }
+
+          return [name, description].filter(d => !!d).join(" - ")
         }).join("\n")
         help.push(`*${group}*\n${modules}\n`)
       }
