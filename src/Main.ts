@@ -5,7 +5,7 @@ import * as TelegramClient from './Telegram'
 import { RedisStore } from "./Store"
 import { User, Task, Feedback } from "./model"
 import { InMemoryStore, Serializer } from "./Store"
-import { GroupHandler, Handler, FeedbackHandler, KarmaHandler, TaskHandler } from "./handler"
+import { ChallengeHandler, GroupHandler, Handler, FeedbackHandler, KarmaHandler, TaskHandler } from "./handler"
 import { ItemStore, Store } from "./Store"
 
 // console.log("Start")
@@ -28,6 +28,11 @@ let taskScope = redisStore.scope("task")
 let taskIdsStore: ItemStore<number[]> =
   taskScope
     .item("__ids")
+    .contramap(Serializer.simpleArray<number>())
+
+let activeTaskIdsStore: ItemStore<number[]> =
+  taskScope
+    .item("__active_ids")
     .contramap(Serializer.simpleArray<number>())
 
 let taskStore: Store<number, Task> =
@@ -55,8 +60,9 @@ let feedbackStore: ItemStore<Feedback[]> =
 
 let groupHandler = new GroupHandler(telegram, groupIdsStore, groupMembersStore, userStore)
 let karmaHandler = new KarmaHandler(userStore)
-let taskHandler = new TaskHandler(taskIdsStore, taskStore, userStore)
+let taskHandler = new TaskHandler(taskIdsStore, taskStore)
 let feedbackHandler = new FeedbackHandler(feedbackStore)
+let challengeHandler = new ChallengeHandler(taskIdsStore, taskStore, activeTaskIdsStore)
 let pingHandler =
   Handler
     .act((ctx) => ctx.reply("pong"))
@@ -68,6 +74,7 @@ let combinedHandler =
     karmaHandler.group("Karma"),
     taskHandler.group("Tasks"),
     feedbackHandler.group("Feedback"),
+    challengeHandler.group("Challenges"),
     pingHandler
   )
   .help()

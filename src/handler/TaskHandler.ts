@@ -3,6 +3,7 @@ import { Task, User } from "../model"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { InMemoryStore, ItemStore, Serializer, Store } from "../Store"
 import { ForwardingHandler, Handler } from "./Handler"
+import { TaskView } from "../view"
 
 export type Draft = { active: boolean, taskId?: number, description?: string, title?: string }
 
@@ -10,15 +11,14 @@ export class TaskHandler extends ForwardingHandler {
   taskIdsStore: ItemStore<number[]>
   taskStore: Store<number, Task>
   userStore: Store<number, User>
-  drafts: { [userId: number] : Draft }
 
-  stopCommands: RegExp = /(stop|cancel|exit)/
+  drafts: { [userId: number] : Draft }
+  stopCommands: RegExp = /(stop|cancel|exit|quit|pause)/
   defaultDraft = { active: false }
 
   constructor (
     taskIdsStore: ItemStore<number[]>,
-    taskStore: Store<number, Task>,
-    userStore: Store<number, User>
+    taskStore: Store<number, Task>
   ) {
     super()
     this.taskIdsStore = taskIdsStore
@@ -62,13 +62,7 @@ export class TaskHandler extends ForwardingHandler {
         if (allTasks.length == 0) {
           ctx.replyWithMarkdown("There are no tasks. Add one now with */addtask*")
         } else {
-          allTasks.sort((a, b) => a.id - b.id)
-          let allTasksString =
-            allTasks.map((task) => {
-              return `\[[${task.id}\]] *${task.title}* - ${task.description}`
-            }).join("\n")
-
-          ctx.replyWithMarkdown(allTasksString)
+          ctx.replyWithMarkdown(TaskView.list(allTasks))
         }
       })
     })

@@ -76,6 +76,23 @@ export abstract class Handler {
     return new HelpHandler(this)
   }
 
+  withArgument(index: number, arg: string) {
+    return this.filter((ctx) => {
+      let args = Handler.parseArgs(ctx)
+      if (args.length <= index) {
+        return false
+      } else {
+        return args[index] == arg
+      }
+    })
+  }
+
+  withArgumentCount(count: number, error?: string) {
+    return this.filter((ctx) => {
+      return Handler.parseArgs(ctx.message.text).length >= count
+    }, error)
+  }
+
   static create(accept: (ctx: any) => boolean) {
     return new ConcreteHandler(accept)
   }
@@ -110,6 +127,10 @@ export abstract class Handler {
     } else {
       return str
     }
+  }
+
+  static parseArgs(str: string) {
+    return Handler.stripCommand(str).split(/(\s|,)+/).filter(k => k != "")
   }
 }
 
@@ -223,9 +244,6 @@ export class HelpHandler extends ForwardingHandler {
       if (message.length > 0 && message[0].trim() != "") {
         details = details.filter((detail) => this.matchDetail(message[0], detail))
       }
-
-      console.log(message)
-      console.log(details)
 
       let grouped = this.groupBy(details, (detail) => detail.group || "Other")
       let help = []

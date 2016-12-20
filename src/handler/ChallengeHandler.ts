@@ -1,175 +1,115 @@
-import { ItemStore, Store } from "../Store"
-import { User } from "../model/User"
+import * as RedisClient from 'redis';
+import { Task, User } from "../model"
+import { TaskView } from "../view"
+import { deserialize, serialize, deserializeArray } from "class-transformer";
+import { InMemoryStore, ItemStore, Serializer, Store } from "../Store"
 import { ForwardingHandler, Handler } from "./Handler"
 
 export class ChallengeHandler extends ForwardingHandler {
-  telegram: any
-  chatIdsStore: ItemStore<number[]>
-  memberIdsStore: Store<number, number[]>
-  memberIds: { [chatId: number]: number[] }
-  userStore: Store<number, User>
+  taskIdsStore: ItemStore<number[]>
+  taskStore: Store<number, Task>
+  activeTaskIdsStore: ItemStore<number[]>
 
-  constructor(
-    telegram: any,
-    chatIdsStore: ItemStore<number[]>,
-    memberIdsStore: Store<number, number[]>,
-    userStore: Store<number, User>
+  constructor (
+    taskIdsStore: ItemStore<number[]>,
+    taskStore: Store<number, Task>,
+    activeTaskIdsStore: ItemStore<number[]>
   ) {
     super()
-    this.telegram = telegram
-    this.chatIdsStore = chatIdsStore
-      .default([])
-      .onUpdate((ids) => {
-        ids.forEach((id) => {
-          if (!(id in this.memberIds)) {
-            this.memberIds[id] = []
-          }
-        })
-      })
-
-    this.userStore = userStore.default((id) => new User(id))
-    this.memberIds = {}
-    this.memberIdsStore = memberIdsStore
-      .default((id) => [])
-      .onUpdate((chatId, memberIds) => this.memberIds[chatId] = memberIds)
-
-    // Boot strap the data for all the chat rooms being watched
-    this.chatIdsStore.get().then((ids) => {
-      console.log("Bootstrapping " + ids)
-      ids.forEach(id => memberIdsStore.get(id))
-    })
-
+    this.taskIdsStore = taskIdsStore
+    this.taskStore = taskStore
+    this.activeTaskIdsStore = activeTaskIdsStore
     this.addHandlers(
-      this.initHandler,
-      this.addMemberHandler,
-      this.notifyHandler,
-      this.removeMemberHandler,
-      this.listMembersHandler
+      this.setRandomChallenges,
+      this.setChallenges,
+      this.addChallenges,
+      this.clearChallenges,
+      this.challenges
     )
   }
 
-  // TODO: Fetch all IDs for memberIdsStore
-
-  chatIdForMember(userId: number): number {
-    for (var chatId in this.memberIds) {
-      if (this.memberIds[chatId].some((memberId) => memberId == userId)) {
-        return parseInt(chatId)
-      }
+  shuffleArray<T>(array: Array<T>): Array<T> {
+    for (let i = array.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = array[i];
+      array[i] = array[j];
+      array[j] = temp;
     }
-    return undefined
+    return array;
   }
 
-  isChatMember(ctx) {
-    return !!this.chatIdForMember(ctx.user.id)
-  }
-
-  initHandler: Handler =
-    Handler.act((ctx) => {
-      this.memberIdsStore.put(ctx.chat.id, [])
-      this.chatIdsStore.modify((input) => {
-        if (!input.some((id) => id == ctx.chat.id)) {
-          input.push(ctx.chat.id)
-          ctx.replyWithMarkdown("Actively caring challenge has commenced!")
+  respondWithTasks(message: string, ctx: any, ids: number[]) {
+    Promise.all(ids.map(id => this.taskStore.get(id)))
+      .then(tasks => {
+        if (tasks.length > 0) {
+          ctx.replyWithMarkdown(message + "\n " + TaskView.list(tasks))
         } else {
-          ctx.replyWithMarkdown("Challenge already under way.")
+          ctx.replyWithMarkdown(message + " No challenges.")
         }
-        return input
       })
-    })
-    .onChatType('group', true)
-    .description("Begin a group in the active room")
-    .command("init")
-
-
-  roomIsEnabled(ctx) {
-    console.log(this.memberIds[ctx.chat.id])
-    return ctx.chat.id in this.memberIds
   }
 
-  addMemberHandler =
+  setRandomChallenges =
     Handler.act((ctx) => {
-      let mentionedUsers = ctx.message.entities
-        .map((entity) => entity.user)
-        .filter((user) => user != undefined)
-
-      let addMemberId =
-        this.memberIdsStore.modify(ctx.chat.id, (members: number[]) => {
-          mentionedUsers.forEach((user) => {
-            let memberExists = members.some((memberId) => memberId == user.id)
-            if (!memberExists) { members.push(user.id) }
-          })
-          return members;
+      let args = Handler.parseArgs(ctx.message.text)
+      let count = parseInt(args[0])
+      this.taskIdsStore.get()
+        .then((ids) => {
+          let shuffledIds: Array<number> = this.shuffleArray(ids)
+          return this.activeTaskIdsStore.put(shuffledIds.slice(0, count))
         })
-
-      let addUsers =
-        Promise.all(
-          mentionedUsers.map((user) => {
-            this.userStore.modify(user.id, (dbUser) => {
-              return dbUser.update(user)
-            })
-          })
-        )
-
-      Promise.all([addMemberId, addUsers]).then(() => {
-        let newUsers = mentionedUsers
-          .map((user) => "*" + user.first_name + " " + user.last_name + "*")
-        ctx.replyWithMarkdown("Added " + newUsers.join(", "))
-      }).catch(console.log)
+        .then(ids => this.respondWithTasks("Random challenges set!", ctx, ids))
     })
-    .onChatType('group')
-    .hasUserEntities(true)
-    .filter(ctx => this.roomIsEnabled(ctx), "Try initializing the room first with /init")
-    .description("Add a user to the active group")
-    .command("adduser")
+    .withArgumentCount(1, "Try again with # of challenges you'd like to set")
+    .description("Randomly select and set n challenges")
+    .command("setrandomchallenges")
 
-  notifyHandler =
+
+  setChallenges =
     Handler.act((ctx) => {
-      if (ctx.chat.type == 'private') {
-        ctx.telegram.sendMessage(
-          this.chatIdForMember(ctx.user.id),
-          "*[!!]* " + ctx.message.text.slice("/notify ".length),
-          { parse_mode: 'Markdown' }
-        )
-      }
+      let ids = Handler.parseArgs(ctx.message.text).map(n => parseInt(n))
+      this.activeTaskIdsStore.put(ids).then(ids => this.respondWithTasks("Challenges set!", ctx, ids))
     })
-    .filter(this.isChatMember, "Must be part of a group first")
-    .onChatType('private')
-    .description("Send an anonymous message to your group")
-    .command("notify")
+    .description("Clear and set the list of challenges to the given task IDs")
+    .command("setchallenge")
 
-  removeMemberHandler =
+  addChallenges =
     Handler.act((ctx) => {
-      let user = ctx.message.entities
-        .map((entity) => entity.user)
-        .filter((user) => user != undefined)
-        .pop()
-
-      this.memberIdsStore.modify(ctx.chat.id, function(members: number[]) {
-        return members.filter((memberId) => memberId != user.id)
-      }).then(() =>
-        ctx.reply("Removed " + user.first_name)
-      )
+      let newIds = Handler.parseArgs(ctx.message.text).map(n => parseInt(n))
+      this.activeTaskIdsStore.modify(ids => ids.concat(newIds))
+        .then(ids => this.respondWithTasks("Challenges added!", ctx, ids))
     })
-    .hasUserEntities(true)
-    .onChatType('group')
-    .filter(ctx => this.roomIsEnabled(ctx), "Try initializing the room first with /init")
-    .description("Remove a user from the active group")
-    .command("removeuser")
+    .description("Add a comma delimited list of task IDs as challenges")
+    .command("addchallenge")
 
-  listMembersHandler =
+  clearChallenges =
+    Handler.act((ctx) => this.activeTaskIdsStore.put([]).then(() => ctx.replyWithMarkdown("Active challenges cleared.")))
+      .description("Clear active challenges")
+      .command("clearchallenges")
+
+  challenges =
     Handler.act((ctx) => {
-      Promise.all(
-        this.memberIds[ctx.chat.id].map((memberId) => this.userStore.get(memberId))
-      ).then((users) => {
-        let userList = users
-          .map((user) => "*" + user.name + "* _(" + user.globalKarma() + " karma)_")
-          .join("\n")
-
-        ctx.replyWithMarkdown(userList)
-      })
+      this.activeTaskIdsStore.get().then((ids) => this.respondWithTasks("Current challenges:", ctx, ids))
     })
-    .onChatType('group')
-    .filter(ctx => this.roomIsEnabled(ctx), "Try initializing the room first with /init")
-    .description("List all members in the active group")
-    .command("members")
+    .description("List all the active challenges")
+    .command("challenges")
+
+
+
+  // settasks (random <number of tasks> | <list of task ids>)
+  // notifytasks
+  // tasks
+  // taskstats <task #>
+  // completetask <task #>
+  //
+  // timer
+
+  // Set active tasks (manually or random)
+  // get active tasks
+  // Give stats on tasks
+  // Allow people to record a task as completed
+  // Send notifications
+
+
+  // TimerHandler, allow people to set timers to perform arbitrary tasks
 }
