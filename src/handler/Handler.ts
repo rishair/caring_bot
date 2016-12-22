@@ -68,7 +68,10 @@ export abstract class Handler {
 
   command(...names: string[]) {
     return this.filter((ctx) => {
-        return names.some((name) => ctx.message.text.indexOf("/" + name) == 0)
+        return names.some((name) => {
+          let match = new RegExp("^/" + name + "($| )")
+          return match.test(ctx.message.text)
+        })
       }).name("/" + names[0])
   }
 

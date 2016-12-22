@@ -105,6 +105,12 @@ export class GroupHandler extends ForwardingHandler {
         Promise.all(
           mentionedUsers.map((user) => {
             this.userStore.modify(user.id, (dbUser) => {
+              if (dbUser.groupId) {
+                this.memberIdsStore.modify(dbUser.groupId, (members: number[]) => {
+                  return members.filter((id) => id != dbUser.groupId)
+                })
+              }
+              dbUser.groupId = ctx.chat.id
               return dbUser.update(user)
             })
           })
@@ -158,17 +164,20 @@ export class GroupHandler extends ForwardingHandler {
 
   listMembersHandler =
     Handler.act((ctx) => {
-      Promise.all(
-        this.memberIds[ctx.chat.id].map((memberId) => this.userStore.get(memberId))
-      ).then((users) => {
-        let userList = users
-          .map((user) => "*" + user.name + "* _(" + user.globalKarma() + " karma)_")
-          .join("\n")
+      let providedChatId = parseInt(Handler.stripCommand(ctx.message.text))
+      this.userStore.get(ctx.from.id).then((user) => {
+        let chatId = providedChatId || ctx.chat.id || user.groupId
+        Promise.all(
+          this.memberIds[chatId].map((memberId) => this.userStore.get(memberId))
+        ).then((users) => {
+          let userList = users
+            .map((user) => `\[[${user.id}\]] *${user.name}* _(${user.globalKarma()}  karma)_`)
+            .join("\n")
 
-        ctx.replyWithMarkdown(userList)
+          ctx.replyWithMarkdown(userList)
+        })
       })
     })
-    .onChatType('group')
     .filter(ctx => this.roomIsEnabled(ctx), "Try initializing the room first with /init")
     .description("List all members in the active group")
     .command("members")

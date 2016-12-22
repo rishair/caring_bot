@@ -5,10 +5,15 @@
   "description": "Telegram bot to facilitate the actively caring challenge",
   "dependencies": {
     "btrconf": "^0.1.0",
+    "chrono": "^1.0.5",
+    "chrono-node": "^1.2.5",
     "class-transformer": "^0.1.3",
+    "datejs": "^1.0.0-rc3",
+    "juration": "0.0.1",
+    "moment": "^2.17.1",
     "redis": "^2.6.3",
     "reflect-metadata": "^0.1.8",
-    "telegraf": "^3.6.1",
+    "telegraf": "^3.6.3",
     "telegraf-session-redis": "^4.2.0"
   },
   "devDependencies": {

@@ -1,17 +1,26 @@
 import { Serializer } from "../Store"
 import { Exclude, Type, deserialize, serialize } from "class-transformer";
 
-type TaskEvent = { timestampMs: number, taskId: number }
+type TaskEvent = { taskId: number, timestampMs: number }
 
 export class User {
   id: number
   name: string
+  groupId?: number
   roomKarmas: { [roomId: number]: number }
   tasksCompleted: TaskEvent[]
 
-  constructor(id: number, name: string = "", roomKarmas: { [roomId: number]: number } = {}) {
+  constructor(
+    id: number,
+    name: string = "",
+    groupId?: number,
+    tasksCompleted?: TaskEvent[],
+    roomKarmas: { [roomId: number]: number } = {}
+  ) {
     this.id = id
     this.name = name
+    this.tasksCompleted = tasksCompleted || []
+    this.groupId = groupId
     this.roomKarmas = roomKarmas
   }
 

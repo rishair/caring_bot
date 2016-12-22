@@ -4,27 +4,33 @@ import { TaskView } from "../view"
 import { deserialize, serialize, deserializeArray } from "class-transformer";
 import { InMemoryStore, ItemStore, Serializer, Store } from "../Store"
 import { ForwardingHandler, Handler } from "./Handler"
+const Moment = require("moment")
 
 export class ChallengeHandler extends ForwardingHandler {
   taskIdsStore: ItemStore<number[]>
   taskStore: Store<number, Task>
   activeTaskIdsStore: ItemStore<number[]>
+  userStore: Store<number, User>
 
   constructor (
     taskIdsStore: ItemStore<number[]>,
     taskStore: Store<number, Task>,
-    activeTaskIdsStore: ItemStore<number[]>
+    activeTaskIdsStore: ItemStore<number[]>,
+    userStore: Store<number, User>
   ) {
     super()
     this.taskIdsStore = taskIdsStore
     this.taskStore = taskStore
     this.activeTaskIdsStore = activeTaskIdsStore
+    this.userStore = userStore
     this.addHandlers(
       this.setRandomChallenges,
       this.setChallenges,
       this.addChallenges,
       this.clearChallenges,
-      this.challenges
+      this.challenges,
+      this.completeChallenge,
+      this.completedChallenges
     )
   }
 
@@ -38,9 +44,18 @@ export class ChallengeHandler extends ForwardingHandler {
     return array;
   }
 
+  get activeTasks() {
+    return this.activeTaskIdsStore.get().then((ids) => {
+      return this.getTasks(ids)
+    })
+  }
+
+  getTasks(ids: number[]): Promise<Task[]> {
+    return Promise.all(ids.map(id => this.taskStore.get(id)))
+  }
+
   respondWithTasks(message: string, ctx: any, ids: number[]) {
-    Promise.all(ids.map(id => this.taskStore.get(id)))
-      .then(tasks => {
+    this.getTasks(ids).then(tasks => {
         if (tasks.length > 0) {
           ctx.replyWithMarkdown(message + "\n " + TaskView.list(tasks))
         } else {
@@ -71,7 +86,7 @@ export class ChallengeHandler extends ForwardingHandler {
       this.activeTaskIdsStore.put(ids).then(ids => this.respondWithTasks("Challenges set!", ctx, ids))
     })
     .description("Clear and set the list of challenges to the given task IDs")
-    .command("setchallenge")
+    .command("setchallenges")
 
   addChallenges =
     Handler.act((ctx) => {
@@ -80,7 +95,7 @@ export class ChallengeHandler extends ForwardingHandler {
         .then(ids => this.respondWithTasks("Challenges added!", ctx, ids))
     })
     .description("Add a comma delimited list of task IDs as challenges")
-    .command("addchallenge")
+    .command("addchallenges")
 
   clearChallenges =
     Handler.act((ctx) => this.activeTaskIdsStore.put([]).then(() => ctx.replyWithMarkdown("Active challenges cleared.")))
@@ -94,7 +109,54 @@ export class ChallengeHandler extends ForwardingHandler {
     .description("List all the active challenges")
     .command("challenges")
 
+  completeChallenge =
+    Handler.act((ctx) => {
+      this.userStore.get(ctx.from.id).then((user) => {
+        if (!user || !user.groupId) {
+          ctx.replyWithMarkdown("You must be added to a group before completing a challenge")
+          user.groupId = ctx.from
+        } else {
+          // TODO: allow matching on title of challenge
+          let challengeId = parseInt(Handler.stripCommand(ctx.message.text))
+          this.activeTasks.then((tasks) => {
+            let activeChallenge = tasks.find((task) => task.id == challengeId)
+            if (!activeChallenge) {
+              ctx.replyWithMarkdown(challengeId + " isn't an active challenge")
+            } else {
+              this.userStore.modify(ctx.from.id, (user) => {
+                user.completeTask(activeChallenge.id)
+                return user
+              }).then((user) => {
+                ctx.replyWithMarkdown("Task marked as completed!")
+              })
+            }
+          })
+        }
+      })
+    })
+    .description("Mark a challenge as completed with its ID")
+    .command("complete")
 
+  completedChallenges =
+    Handler.act((ctx) => {
+      let userId = parseInt(Handler.stripCommand(ctx.message.text)) || ctx.from.id
+      this.userStore.get(userId).then((user: User) => {
+        if (user.tasksCompleted.length == 0) {
+          ctx.replyWithMarkdown("No completed tasks")
+        } else {
+          this.getTasks(user.tasksCompleted.map(task => task.taskId)).then((fullTasks: Task[]) => {
+            ctx.replyWithMarkdown(
+              "Completed:\n " + user.tasksCompleted.map((event) => {
+                let task = fullTasks.filter(t => t.id == event.taskId).pop()
+                return ` *${task.title}* ${Moment(event.timestampMs).fromNow()}`
+              }).join("\n")
+            )
+          })
+        }
+      })
+    })
+    .description("See all completed challenges for yourself or another user")
+    .command("completed")
 
   // settasks (random <number of tasks> | <list of task ids>)
   // notifytasks
