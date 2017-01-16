@@ -138,7 +138,7 @@ export class GroupHandler extends ForwardingHandler {
         )
       }
     })
-    .filter(this.isChatMember, "Must be part of a group first")
+    .filter((ctx) => this.isChatMember(ctx), "Must be part of a group first")
     .onChatType('private')
     .description("Send an anonymous message to your group")
     .command("notify")
