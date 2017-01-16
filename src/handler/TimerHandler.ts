@@ -96,11 +96,7 @@ export class TimerHandler extends ForwardingHandler {
         let date = this.parseDate(ctx.message.text)
         console.log(date)
         if (date) {
-          draft.executionTimeMs = date.getTime()
-
-          console.log((draft.executionTimeMs - Date.now() ) / 1000)
-          console.log(draft.executionTimeMs)
-          console.log(Date.now())
+          draft.executionTimeMs = date.getTime() - (9 * 60 * 60 * 1000)
           let friendlyTime = Juration.stringify((draft.executionTimeMs - Date.now() ) / 1000, { format: 'long', units: 1 });
           ctx.replyWithMarkdown(`Great, we'll first run this task in ${friendlyTime}. How often would you like it to repeat? Enter *none* for no repeating`)
         } else {
@@ -123,11 +119,13 @@ export class TimerHandler extends ForwardingHandler {
         draft.updates = draft.updates || []
         if (ctx.message.text == 'done') {
           ctx.replyWithMarkdown("Great, we've got " + draft.updates.length + " commands.")
+          delete this.drafts[this.getChatKey(ctx)]
         } else {
           let update = this.copyObject(ctx.update)
           update.message.chat.id = draft.groupId
           update.message.chat.type = "group"
           draft.updates.push({ update: update, print: true })
+          ctx.replyWithMarkdown(`Task ${draft.updates.length} recorded`)
         }
       }
     })
