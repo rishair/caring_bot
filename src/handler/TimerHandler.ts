@@ -48,7 +48,7 @@ export class TimerHandler extends ForwardingHandler {
 
   parseDate(str: string): Date {
     let date: any = Date.parse(str)
-    date.setTime(date.getTime() + 9*60*60*1000);
+    if (date) date.setTime(date.getTime() + 9*60*60*1000);
     return date
   }
 
@@ -92,10 +92,20 @@ export class TimerHandler extends ForwardingHandler {
   timerCreator =
     Handler.act((ctx) => {
       let draft = this.getDraft(ctx)
-      if (!draft.executionTimeMs) {
+      if (draft.executionTimeMs == undefined) {
         let date = this.parseDate(ctx.message.text)
-        draft.executionTimeMs = date.getTime()
-        ctx.replyWithMarkdown("Great. How often would you like it to repeat? Enter *none* for no repeating")
+        console.log(date)
+        if (date) {
+          draft.executionTimeMs = date.getTime()
+
+          console.log((draft.executionTimeMs - Date.now() ) / 1000)
+          console.log(draft.executionTimeMs)
+          console.log(Date.now())
+          let friendlyTime = Juration.stringify((draft.executionTimeMs - Date.now() ) / 1000, { format: 'long', units: 1 });
+          ctx.replyWithMarkdown(`Great, we'll first run this task in ${friendlyTime}. How often would you like it to repeat? Enter *none* for no repeating`)
+        } else {
+          ctx.replyWithMarkdown("I didn't get that, could you try again?")
+        }
       } else if (draft.repeatIntervalMs == null) {
         if (ctx.message.text == "none") {
           draft.repeatIntervalMs = 0

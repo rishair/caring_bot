@@ -78,11 +78,11 @@ let allHandlers =
     pingHandler
   )
 
-// let timerHandler = new TimerHandler(allHandlers, userStore).group("Timer")
+let timerHandler = new TimerHandler(allHandlers, userStore).group("Timer")
 
 let combinedHandlers =
   Handler.firstOnly(
-    // timerHandler,
+    timerHandler,
     allHandlers
   )
   .help()
@@ -92,7 +92,7 @@ telegram.on('message', (ctx, next) => {
   try {
     combinedHandlers.accept(ctx)
   } catch(e) {
-    ctx.replyWithMarkdown("Hm. Something went wrong.")
+    ctx.replyWithMarkdown("Hm. Something went wrong. ${e}")
     console.log(e)
   }
   next();
