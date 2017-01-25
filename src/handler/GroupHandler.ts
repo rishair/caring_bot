@@ -60,7 +60,7 @@ export class GroupHandler extends ForwardingHandler {
   }
 
   isChatMember(ctx) {
-    return !!this.chatIdForMember(ctx.user.id)
+    return !!this.chatIdForMember(ctx.from.id)
   }
 
   initHandler: Handler =
@@ -132,7 +132,7 @@ export class GroupHandler extends ForwardingHandler {
     Handler.act((ctx) => {
       if (ctx.chat.type == 'private') {
         ctx.telegram.sendMessage(
-          this.chatIdForMember(ctx.user.id),
+          this.chatIdForMember(ctx.from.id),
           "*[!!]* " + ctx.message.text.slice("/notify ".length),
           { parse_mode: 'Markdown' }
         )
