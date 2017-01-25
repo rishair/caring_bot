@@ -31,12 +31,14 @@ export class GroupHandler extends ForwardingHandler {
     this.memberIds = {}
     this.memberIdsStore = memberIdsStore
       .default((id) => [])
-      .onUpdate((chatId, memberIds) => this.memberIds[chatId] = memberIds)
+      .onUpdate((chatId, memberIds) => {
+        this.memberIds[chatId] = memberIds
+       })
 
     // Boot strap the data for all the chat rooms being watched
     this.chatIdsStore.get().then((ids) => {
       console.log("Bootstrapping " + ids)
-      ids.forEach(id => memberIdsStore.get(id))
+      ids.forEach(id => this.memberIdsStore.get(id))
     })
 
     this.addHandlers(
