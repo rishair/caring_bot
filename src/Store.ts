@@ -142,6 +142,10 @@ export abstract class Store<K, V> {
     )
   }
 
+  defaultValue(value: V) {
+    return this.default((k) => value)
+  }
+
   item(key: K): ItemStore<V> {
     let me = this
     return new ItemStore<V>(

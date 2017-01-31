@@ -1,5 +1,7 @@
 type Requirement = { name?: string, message: string }
 type HandlerDetails = { name?: string, description?: string, requirements?: Requirement[], group?: string }
+let NotifyString = "\\*\\[!!\\]\\*"
+
 
 export abstract class Handler {
   abstract accept(ctx: any): boolean
@@ -70,7 +72,7 @@ export abstract class Handler {
     return this.filter((ctx) => {
         return names.some((name) => {
           let match = new RegExp("^/" + name + "($| )")
-          return match.test(ctx.message.text)
+          return match.test(ctx.message.text.replace(new RegExp("^" + NotifyString + "\\s*"), ""))
         })
       }).name("/" + names[0])
   }

@@ -52,6 +52,7 @@ let groupMembersStore: Store<number, number[]> =
     .transformKey<number>((k) => k.toString() + "/members")
     .trackKeys(groupIdsStore)
     .contramapValue(Serializer.simpleArray<number>())
+    .defaultValue([])
 
 let feedbackStore: ItemStore<Feedback[]> =
   redisStore
